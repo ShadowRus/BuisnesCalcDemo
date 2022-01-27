@@ -1,12 +1,22 @@
 import streamlit as st
 import pandas as pd
+import  numpy as np
 
 # Dictionary and data.......
-dict_status = {'Дистрибьютер', 'Премиум партнер', 'Партнер'}
-product_direct_dict = {'Retail', 'SIGMA', 'Девайс', 'Мобильные решения'}
-dict_Retail ={'Фискальные регистраторы','АТОЛ Connect','Frontol 6 + Frontol xPOS','Frontol Release Pack 6/xPos 1 год'}
-dict_AMS ={'ТСД','ПО Mark.Scan'}
-df = pd.read_csv('buisnes-roadmap.csv')
+#--------STATUS-----------------------
+dict_status = {'Дистрибьютер':'D', 'Премиум партнер':'PP','Партнер':'P'}
+list_status= list(dict_status.keys())
+list_status_short= list(dict_status.values())
+#----------PRODUCT-DIRECT----------------
+
+product_direct_list = list(['Retail', 'SIGMA', 'Девайс', 'Мобильные решения'])
+#--------------------------------
+list_Retail =list(['Фискальные регистраторы','АТОЛ Connect','Frontol 6 + Frontol xPOS','Frontol Release Pack 6/xPos 1 год'])
+list_AMS= list(['Все','ТСД','ПО Mark.Scan'])
+#---------READ-BUISNESS PLAN-------
+df_pda = pd.read_csv('PDA22-27_.csv',sep=';',index_col = 'Year')
+
+df_soft = pd.read_csv('Soft22-27_.csv',sep=';',index_col = 'Year')
 #...PageSettings..................
 st.set_page_config(
      page_title="Ex-stream-ly Cool App",
@@ -19,32 +29,48 @@ st.set_page_config(
          'About': "# This is a header. This is an *extremely* cool app!"
      }
  )
-#...........................
+#....VARIABLES.......................
+lt_saas = 0.48
 
-
-
-st.title('Бизнес-калькулятор партнеров АТОЛ"')
+#---------------------
+st.title('Бизнес-калькулятор партнеров АТОЛ')
 
 add_selectbox = st.sidebar.selectbox(
-    "How would you like to be contacted?",
-    ("Email", "Home phone", "Mobile phone")
+    "Бизнес-калькулятор",
+    ("Бизнес-план", "Рассчитать свои выгоды","Ценность SaaS", "О Бизнес-калькуляторе")
 )
+
 
 status_partner = st.radio(
      "Выберите Ваш статус",
-    dict_status, help='Выберите свой статус партнера')
+    list_status, help='Выберите свой статус партнера')
 
-product_direct = st.selectbox('Выберите продуктовое направление',product_direct_dict)
-if product_direct == 'Мобильные решения':
-     product_AMS = st.multiselect(
-         'Выберите товары:',
-         dict_AMS,
-         dict_AMS)
+product_direct = st.selectbox('Выберите продуктовое направление', product_direct_list, index= 3)
+if product_direct == product_direct_list[3]:
+     product_AMS = st.selectbox("Выберите товары:", list_AMS, index=0)
+     text1= 'План продаж на 2022-2027 год категории '+product_direct+ ' для партнера со статусом '+ status_partner
+     st.title(text1)
 
-     st.write('You selected:', product_AMS)
-     st.write('You selected:', product_AMS[0])
+     if product_AMS == list_AMS[1]:
+        temp1= df_pda[[dict_status[status_partner]]]
+        temp1.rename(columns={dict_status[status_partner]:product_AMS},inplace= True)
+        st.dataframe(temp1)
+     if product_AMS == list_AMS[2]:
+         temp1 = df_soft[[dict_status[status_partner]]]
+         temp1.rename(columns={dict_status[status_partner]: product_AMS}, inplace=True)
+         st.dataframe(temp1)
+     if product_AMS == list_AMS[0]:
+         temp1 = df_pda[[dict_status[status_partner]]]
+         temp1.rename(columns={dict_status[status_partner]: product_AMS}, inplace=True)
+         temp1= pd.concat([temp1,df_soft[[dict_status[status_partner]]]],axis= 1)
+         temp1.columns= ['ТСД','ПО Mark.Scan']
+         temp1['Mark.Scan LifeTime']=temp1.iloc[:,1]*lt_saas
+         temp1['Mark.Scan LifeTime']= temp1['Mark.Scan LifeTime'].apply(lambda x: f"{x:.0f}")
+         temp1['Mark.Scan SAAS'] = temp1.iloc[:, 1] * (1- lt_saas)
+         temp1['Mark.Scan SAAS'] = temp1['Mark.Scan SAAS'].apply(lambda x: f"{x:.0f}")
+         st.dataframe(temp1)
+         del temp1
 else:
     st.write('Для выбранного направления бизнес-калькулятор временно недоступен.Зайдите в раздел чуточку позднее')
 
 
-st.header('Ваш план продаж на 2022 год')
